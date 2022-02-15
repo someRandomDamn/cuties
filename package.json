@@ -1,0 +1,23 @@
+{
+  "name": "cutties-token",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "migrate-development": "truffle migrate --network development",
+    "migrate-bscTestnet": "truffle migrate --network bscTestnet",
+    "test": "truffle test"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.5.0",
+    "@truffle/hdwallet-provider": "^2.0.0",
+    "dotenv": "^16.0.0",
+    "ganache": "^7.0.2",
+    "truffle": "^5.1.55"
+  },
+  "devDependencies": {
+    "truffle-plugin-verify": "^0.5.21"
+  }
+}
