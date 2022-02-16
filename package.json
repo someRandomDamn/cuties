@@ -6,7 +6,8 @@
   "scripts": {
     "migrate-development": "truffle migrate --network development",
     "migrate-bscTestnet": "truffle migrate --network bscTestnet",
-    "test": "truffle test"
+    "test": "truffle test",
+    "ganache": "ganache --wallet.seed myCustomSeed"
   },
   "author": "",
   "license": "ISC",

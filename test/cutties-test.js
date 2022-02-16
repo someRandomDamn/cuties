@@ -1,3 +1,4 @@
+const BN = require('bn.js');
 const CutiesToken = artifacts.require("CutiesToken");
 
 contract("CutiesToken test", async accounts => {
@@ -14,25 +15,23 @@ contract("CutiesToken test", async accounts => {
 
 	it("should not allow for NOT admin to grant operator role", async () => {
 		try {
-			const operatorRole = await contract.OPERATOR_ROLE.call();
-			await contract.grantRole.sendTransaction(operatorRole, accounts[2], { from: accounts[1] });
+			await contract.addToOperatorList.sendTransaction(accounts[2], { from: accounts[1] });
 
 			// should not allow to grant role for user without oeprator role
 			assert.equal(false, true);
 		} catch (e) {
-			assert.equal(e.message.includes('missing role'), true);
+			assert.equal(e.message.includes('Only owner has permissions'), true);
 		}
 	});
 
 	it("should allow admin to grant operator role", async () => {
-		const operatorRole = await contract.OPERATOR_ROLE.call();
-
-		const hasRoleBefore = await contract.hasRole.call(operatorRole, accounts[1]);
-		await contract.grantRole.sendTransaction(operatorRole, accounts[1], { from: accounts[0] });
-		const hasRoleAfter = await contract.hasRole.call(operatorRole, accounts[1]);
-
-		assert.equal(hasRoleBefore, false);
-		assert.equal(hasRoleAfter, true);
+		try {
+			await contract.addToOperatorList.sendTransaction(accounts[1], { from: accounts[0] });
+			// should not allow to grant role for user without oeprator role
+			assert.equal(true, true);
+		} catch (e) {
+			assert.equal(false, true);
+		}
 	});
 
 	it("should not allow add/remove from blacklist for user without operator role", async () => {
@@ -41,7 +40,7 @@ contract("CutiesToken test", async accounts => {
 			// should not allow to grant role for user without oeprator role
 			assert.equal(false, true);
 		} catch (e) {
-			assert.equal(e.message.includes('missing role'), true);
+			assert.equal(e.message.includes('Not enough permissions'), true);
 		}
 
 		try {
@@ -49,16 +48,14 @@ contract("CutiesToken test", async accounts => {
 			// should not allow to grant role for user without oeprator role
 			assert.equal(false, true);
 		} catch (e) {
-			assert.equal(e.message.includes('missing role'), true);
+			assert.equal(e.message.includes('Not enough permissions'), true);
 		}
 	});
 
 	it("should allow add/remove from blacklist for user with operator role", async () => {
-		const operatorRole = await contract.OPERATOR_ROLE.call();
 
 		const inBlackListBefore = await contract.blackList.call(accounts[3]);
-		const hasOperatorRole = await contract.hasRole.call(operatorRole, accounts[1]);
-
+		await contract.addToOperatorList.sendTransaction(accounts[1], { from: accounts[0] });
 		await contract.addToBlackList.sendTransaction(accounts[3], { from: accounts[1] });
 		const inBlackListAfterAdd = await contract.blackList.call(accounts[3]);
 
@@ -66,7 +63,6 @@ contract("CutiesToken test", async accounts => {
 		const inBlackListAfterRemove = await contract.blackList.call(accounts[3]);
 
 		assert.equal(inBlackListBefore, false);
-		assert.equal(hasOperatorRole, true);
 		assert.equal(inBlackListAfterAdd, true);
 		assert.equal(inBlackListAfterRemove, false);
 	});
@@ -108,10 +104,18 @@ contract("CutiesToken test", async accounts => {
 		const burnAmount = 1000000000000;
 		await contract.burn.sendTransaction(burnAmount, { from: accounts[0]});
 
+		try {
+			await contract.burn.sendTransaction(burnAmount, { from: accounts[3]});
+			// should not allow to burn for user without admin role
+			assert.equal(false, true);
+		} catch (e) {
+			assert.equal(e.message.includes('Only owner has permissions'), true);
+		}
+
 		const updatedSupply = await contract.totalSupply.call();
 
-		assert.equal(initialTotalSupply.toString(), '1000000000000000000000');
-		assert.equal(updatedSupply.toString(), '999999999000000000000');
+		assert.equal(initialTotalSupply.toString(), new BN('1000000000000000000000'));
+		assert.equal(updatedSupply.toString(), new BN('999999999000000000000'));
 	});
 
 	it("should allow mint only for owner", async () => {
@@ -126,23 +130,23 @@ contract("CutiesToken test", async accounts => {
 			// should not allow to grant role for user without operator role
 			assert.equal(false, true);
 		} catch (e) {
-			assert.equal(e.message.includes('is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'), true);
+			assert.equal(e.message.includes('Only owner has permissions'), true);
 		}
 		const updatedSupply = await contract.totalSupply.call();
 
-		assert.equal(initialTotalSupply.toString(), '999999999000000000000');
-		assert.equal(updatedSupply.toString(), '1000000000000000000000');
+		assert.equal(initialTotalSupply.toString(), new BN('999999999000000000000'));
+		assert.equal(updatedSupply.toString(), new BN('1000000000000000000000'));
 	});
 
 	it("should not exceed max cap check", async () => {
-		const mintAmount = '1000000000000000000000000000000000000000000000000';
+		const mintAmount = new BN('1000000000000000000000000000000000000000000000000');
 		try {
 			// check role of minting
 			await contract.mint.sendTransaction(contract.address, mintAmount, { from: accounts[0]});
 			// should not allow to grant role for user without operator role
 			assert.equal(false, true);
 		} catch (e) {
-			assert.equal(e.message.includes('cap exceeded'), true);
+			assert.equal(e.message.includes('max supply exceeded'), true);
 		}
 	});
 });
